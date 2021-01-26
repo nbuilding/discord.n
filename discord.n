@@ -131,7 +131,7 @@ let parseMessageData = [data:json.value] -> maybe[message] {
 				sender: if let <object val> = <default <json.object <mapFrom [("", <json.string "">)]>> <getValue "author" map>> {
 							if let <yes retained> = <jsonToStrMap <json.object val>>{
 								<parseUserData retained>
-													  |> <yes>
+														|> <yes>
 							} else {
 								none
 							}
@@ -156,8 +156,30 @@ let pub start = [k:str] -> cmd[bool] {
 	if r.code /= 200{
 		return false
 	}
-	print r
-	// other important functions idk what is going to happen here
+	
+	if let <object map> = r.return {
+		if let <string url> = <default <json.array [<json.string "">]> <getValue "url" map>>{
+			let pub websocketTest = <websocket.connect {
+					onOpen: [send: websocket.send] -> cmd[bool] {
+						print "Open!"
+						let _ = <send "hi">!
+						return false
+					}
+					onMessage: [send: websocket.send message: str] -> cmd[bool] {
+						print message
+						let _ = <send "hello">!
+						return message == "hello"
+					}
+				} url>
+
+		} else {
+			return false
+		}
+	} else {
+		print "hmmmm"
+		return false
+	}
+
 	return true
 }
 
@@ -214,7 +236,7 @@ let pub getMessages = [c:str] -> cmd[maybe[list[message]]] {
 		return list
 				 |> <filterMap ([thing: json.value] -> maybe[message] {
 				 	return thing
-				 		 	  |> <parseMessageData>
+				 		 		|> <parseMessageData>
 				 })>
 				 |> <yes>
 	} else {

@@ -7,7 +7,7 @@ let discord = imp discord
 
 
 let self = [] -> cmd[()]{
-	if <discord.start "key here">!{
+	if <discord.start "valid key">!{
 		print <discord.getKey>
 		print <discord.getSelf>!
 		print <discord.getUser "384499090865782785">!
@@ -19,33 +19,3 @@ let self = [] -> cmd[()]{
 }
 
 let pub main = <self>
-
-let runner = imp runner
-
-let thenHelper = [[t] command:cmd[t] _:()] -> cmd[t] {
-  return command
-}
-let printResult = [[t] result:t] -> cmd[()] {
-  //print result
-  return <fek.paer "done">
-}
-let cmdId = [[v] value: v] -> cmd[v] {
-  return value
-}
-let main2 = [question: str] -> cmd[int] {
-  let name = <SystemIO.inp question>!
-  let _ = <fek.paer ("Hi " + name + ".")>!
-//  let token = <SystemIO.inp "Discord bot token: ">!
-//  let _ = <discordn.setId token>!
-//  print <discordn.sendMessage "710936824121655396" "uau" false>!
-  return <cmdId 3>
-}
-let main3 = [_: ()] -> cmd[()] {
-  let wow: int = <cmdId <main2 "What's your name? ">!>!
-  //print wow
-}
-// let pub exec = <main3 ()>
-
-// print runner.e runner.e is not public so this throws an error
-//print runner.eeeeee
-
