@@ -156,7 +156,7 @@ let pub start = [k:str] -> cmd[bool] {
 	if r.code /= 200{
 		return false
 	}
-	
+
 	if let <object map> = r.return {
 		if let <string url> = <default <json.array [<json.string "">]> <getValue "url" map>>{
 			let pub websocketTest = <websocket.connect {
@@ -170,8 +170,8 @@ let pub start = [k:str] -> cmd[bool] {
 						let _ = <send "hello">!
 						return message == "hello"
 					}
-				} url>
-
+				} url>!
+        print websocketTest
 		} else {
 			return false
 		}
@@ -245,7 +245,7 @@ let pub getMessages = [c:str] -> cmd[maybe[list[message]]] {
 }
 
 let pub getMessage = [c:str m:str] -> cmd[maybe[message]] {
-	let url:str = "https://discord.com/api/channels/" + c + "/messages/" + m 
+	let url:str = "https://discord.com/api/channels/" + c + "/messages/" + m
 	let r = <request.get url header>!
 
 	if r.code /= 200{

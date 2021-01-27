@@ -1,4 +1,5 @@
 import fek
+import FileIO
 import SystemIO
 import json
 import request
@@ -7,8 +8,12 @@ let discord = imp discord
 
 
 let self = [] -> cmd[()]{
-	if <discord.start "valid key">!{
-		print <discord.getKey>
+	let key: str = (<FileIO.read "./.token">!)
+		|> <default "">
+    |> <strip>
+	if <discord.start key>! {
+		// printing the token is pretty foolish
+		// print <discord.getKey>
 		print <discord.getSelf>!
 		print <discord.getUser "384499090865782785">!
 		print <discord.getMessage "710936824121655396" "803048930567782471">!
