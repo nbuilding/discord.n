@@ -37,6 +37,13 @@ alias member = {
 //	customStatus:maybe[str] this needs a gateway
 }
 
+alias emote = {
+	id:str
+	name:str
+	guild:str
+	animated:bool
+}
+
 alias guild = {
 	id:str
 	name:str
@@ -159,19 +166,18 @@ let pub start = [k:str] -> cmd[bool] {
 	
 	if let <object map> = r.return {
 		if let <string url> = <default <json.array [<json.string "">]> <getValue "url" map>>{
-			let pub websocketTest = <websocket.connect {
-					onOpen: [send: websocket.send] -> cmd[bool] {
-						print "Open!"
-						let _ = <send "hi">!
-						return false
-					}
-					onMessage: [send: websocket.send message: str] -> cmd[bool] {
-						print message
-						let _ = <send "hello">!
-						return message == "hello"
-					}
-				} url>
-
+			let websocket = <websocket.connect {
+				onOpen: [send: websocket.send] -> cmd[bool] {
+					print "Open!"
+					let _ = <send "hi">!
+					return false
+				}
+				onMessage: [send: websocket.send message: str] -> cmd[bool] {
+					print message
+					let _ = <send "hello">!
+					return message == "hello"
+				}
+			} url>!
 		} else {
 			return false
 		}
@@ -187,6 +193,7 @@ let pub getKey = [] -> str{
 	return key
 }
 
+// Getting users
 let pub getSelf = [] -> cmd[maybe[member]] {
 	// Sends a request to the url
 	let r = <request.get "https://discord.com/api/users/@me" header>!
@@ -218,12 +225,7 @@ let pub getUser = [id:str] -> cmd[maybe[member]] {
 	}
 }
 
-let pub sendMessage = [c:str m:str] -> cmd[int] {
-	let url:str = "https://discord.com/api/channels/" + c + "/messages"
-	let r = <request.post url <mapFrom [("content", m)]> header>!
-	return r.code
-}
-
+// Getting Messages
 let pub getMessages = [c:str] -> cmd[maybe[list[message]]] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages"
 	let r = <request.get url header>!
@@ -253,4 +255,13 @@ let pub getMessage = [c:str m:str] -> cmd[maybe[message]] {
 	}
 
 	return <parseMessageData r.return>
+}
+
+
+// Sending messages/reactions
+let pub sendMessage = [c:str m:str] -> cmd[int] {
+	let url:str = "https://discord.com/api/channels/" + c + "/messages"
+	let r = <request.post url <mapFrom [("content", m)]> header>!
+	print r
+	return r.code
 }
