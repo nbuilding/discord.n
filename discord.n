@@ -157,17 +157,16 @@ let parseUserData = [data:map[str, str]] -> Member{
 			|> default(""),
 		(data
 			|> getValue("bot")
-			|> default("True")) == "True")
-
-	}
+			|> default("True")) == "True"
+	)
 }
 
 let parseMessageData = [data:json.value] -> maybe[Message] {
 
 	if let <object map> = data {
 
-		return <yes Message.new(
-			if let <yes <string ch>> = getValue("channel_id", map) {<yes ch>} else {none},
+		return yes(Message.new(
+			if let <yes <string ch>> = getValue("channel_id", map) {yes(ch)} else {none},
 			if let <object map> = data {
 				if let <yes <string str>> = getValue("id", map) {
 					str
@@ -187,10 +186,10 @@ let parseMessageData = [data:json.value] -> maybe[Message] {
 			} else {
 				""
 			},
-			if let <object val> = default(<json.object mapFrom([("", <json.string "">)])>, getValue("author", map) {
-				if let <yes retained> = <jsonToStrMap <json.object val>>{
+			if let <object val> = default(json.object(mapFrom([("", json.string(""))])), getValue("author", map)) {
+				if let <yes retained> = jsonToStrMap(json.object(val)) {
 					parseUserData(retained)
-										 |> <yes>
+										 |> yes()
 				} else {
 					none
 				}
@@ -198,7 +197,7 @@ let parseMessageData = [data:json.value] -> maybe[Message] {
 				none
 			}
 
-		})>
+		))
 	} else {
 		return none
 	}
@@ -215,18 +214,18 @@ let pub start = [k:str] -> cmd[bool] {
 	if r.code /= 200{
 		return false
 	}
-	
+
 	if let <object map> = r.return {
-		if let <string url> = default(<json.array [<json.string "">]>, getValue("url" map)){
+		if let <string url> = default(json.array([json.string("")]), getValue("url", map)) {
 			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
-					print "Open!"
-					let _ = <send "hi">!
+					print("Open!")
+					let _ = send("hi")!
 					return false
 				}
 				onMessage: [send: websocket.send message: str] -> cmd[bool] {
-					print message
-					let _ = <send "hello">!
+					print(message)
+					let _ = send("hello")!
 					return message == "hello"
 				}
 			}, url)!
@@ -252,9 +251,9 @@ let pub getSelf = [] -> cmd[maybe[Member]] {
 		return none
 	}
 
-	if let <yes map> = <jsonToStrMap r.return> {
+	if let <yes map> = jsonToStrMap(r.return) {
 		return parseUserData(map)
-							   |> <yes>
+							   |> yes()
 	} else {
 		return none
 	}
@@ -268,9 +267,9 @@ let pub getUser = [id:str] -> cmd[maybe[Member]] {
 		return none
 	}
 
-	if let <yes map> = <jsonToStrMap r.return> {
-		return <arseUserData(map)
-							   |> <yes>
+	if let <yes map> = jsonToStrMap(r.return) {
+		return parseUserData(map)
+							   |> yes()
 	} else {
 		return none
 	}
@@ -291,28 +290,28 @@ let pub getMessages = [c:str] -> cmd[maybe[list[Message]]] {
 				 	return thing
 				 		 	  |> parseMessageData()
 				 }))
-				 |> <yes>
+				 |> yes()
 	} else {
 		return none
 	}
 }
 
 let pub getMessage = [c:str m:str] -> cmd[maybe[Message]] {
-	let url:str = "https://discord.com/api/channels/" + c + "/messages/" + m 
+	let url:str = "https://discord.com/api/channels/" + c + "/messages/" + m
 	let r = request.get(url, header)!
 
 	if r.code /= 200{
 		return none
 	}
 
-	return <parseMessageData r.return>
+	return parseMessageData(r.return)
 }
 
 
 // Sending messages/reactions
 let pub sendMessage = [c:str m:str] -> cmd[int] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages"
-	let r = request.post(url, mapFrom([("content", m)]) header)!
-	print r
+	let r = request.post(url, mapFrom([("content", m)]), header)!
+	print(r)
 	return r.code
 }

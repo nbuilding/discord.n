@@ -8,13 +8,13 @@ let discord = imp discord
 
 let self = [] -> cmd[()]{
 	if discord.start("valid key")!{
-		print discord.getKey()
-		print discord.getSelf()!
-		print discord.getUser("384499090865782785")!
-		print discord.getMessage("710936824121655396", "803048930567782471")!
-		print discord.sendMessage("660903404977127426", "I have been released")!
+		print(discord.getKey())
+		print(discord.getSelf()!)
+		print(discord.getUser("384499090865782785")!)
+		print(discord.getMessage("710936824121655396", "803048930567782471")!)
+		print(discord.sendMessage("660903404977127426", "I have been released")!)
 	} else {
-		print "key is not valid"
+		print("key is not valid")
 	}
 }
 
