@@ -5,10 +5,10 @@ import websocket
 // important variables
 let key:str = ""
 
-let header: map[str, str] = <mapFrom [
+let header: map[str, str] = mapFrom([
 	("Content-Type", "application/json"),
 	("Authorization", "Bot " + key)
-]>
+])
 
 // custom types
 
@@ -16,137 +16,189 @@ type status = online
 			| away
 			| offline
 
-alias color = {
-	r:int
-	g:int
-	b:int
+class pub Color {
+	let r:int = 0
+	let g:int = 0
+	let b:int = 0
+
+	Color = [red:int green:int blue:int]{
+		var r = red
+		var g = green
+		var b = blue
+	}
 }
 
-alias role = {
-	color:color
-	name:str
-	rank:int
+class pub Role {
+	let color:Color = Color.new(0, 0, 0)
+	let name:str = ""
+	let rank:int = 0
+
+	Role = [c:Color n:str r:int] {
+		var color = c
+		var name = n
+		var rank = r
+	}
 }
 
-alias member = {
-	id:str
-	name:str
-	icon:str
-	bot:bool
-//	status:status this needs a gateway
-//	customStatus:maybe[str] this needs a gateway
+class pub Member {
+	let id:str = ""
+	let name:str = ""
+	let icon:str = ""
+	let bot:bool = false
+
+	Member = [i:str n:str ic:str b:bool] {
+		var id = i
+		var name = n
+		var icon = ic
+		var bot = b
+	}
 }
 
-alias emote = {
-	id:str
-	name:str
-	guild:str
-	animated:bool
+class pub Emote {
+	let id:str = ""
+	let name:str = ""
+	let guild:str = ""
+	let animated:bool = false
+
+	Emote = [i:str n:str g:str a:bool] {
+		var id = i
+		var name = n
+		var guild = g
+		var animated = a
+	}
 }
 
-alias guild = {
-	id:str
-	name:str
-	emojis:list[str]
-	icon:str
-	members:list[member]
-	banlist:list[member]
+class pub Guild {
+	let id:str = ""
+	let name:str = ""
+	let emojis:list[Emote] = []
+	let icon:str = ""
+	let members:list[Member] = []
+	let banlist:list[Member] = []
+
+	Guild = [i:str n:str e:list[Emote] ic:str m:list[Member] b:list[Member]] {
+		var id = i
+		var name = n
+		var emojis = e
+		var icon = ic
+		var members = m
+		var banlist = b
+	}
 }
 
-alias channel = {
-	id:str
-	name:str
-	guild:maybe[str]
-	membersAllowed:list[member]
-	textChannel:bool
+class pub Channel {
+	let id:str = ""
+	let name:str = ""
+	let guild:maybe[str] = none
+	let textChannel:bool = true
+
+	Channel = [i:str n:str g:maybe[str] t:bool] {
+		var id = i
+		var name = n
+		var guild = g
+		var textChannel = t
+	}
 }
 
-alias message = {
-	channel:maybe[str]
-	id:str
-	content:str
-	sender:maybe[member]
+class pub Message {
+	let channel:maybe[str] = none
+	let id:str = ""
+	let content:str = ""
+	let sender:maybe[Member] = none
+
+	Message = [c:maybe[str] i:str co:str s:maybe[Member]] {
+		var channel = c
+		var id = i
+		var content = co
+		var sender = s
+	}
 }
 
-alias reaction = {
-	emoji:str
-	message:message
-	sender:member
+class pub Reaction {
+	let emoji:str = ""
+	let message:Message = Message.new()
+	let sender:Member = Member.new()
+
+	Reaction = [e:str m:Message s:Member] {
+		var emoji = e
+		var message = m
+		var sender = s
+	}
 }
 
 // internal functions
 let jsonToStrMap = [jsonVal: json.value] -> maybe[map[str, str]] {
 	if let <object map> = jsonVal {
-		return <entries map>
-			|> <filterMap ([(key, value): (str, json.value)] -> maybe[(str, str)] {
+		return entries(map)
+			|> filterMap(([(key, value): (str, json.value)] -> maybe[(str, str)] {
 				if let <string str> = value {
-					return <yes (key, str)>
+					return yes((key, str))
 				} else {
 					return none
 				}
-			})>
-			|> <mapFrom>
-			|> <yes>
+			}))
+			|> mapFrom()
+			|> yes()
 	} else {
 		return none
 	}
 }
 
-let parseUserData = [data:map[str, str]] -> member{
-	return {
-		id: data
-				|> <getValue "id">
-				|> <default "">
-		name: data
-				|> <getValue "username">
-				|> <default "">
-		icon: data
-				|> <getValue "avatar">
-				|> <default "">
-		bot: (data
-				|> <getValue "bot">
-				|> <default "True">) == "True"
+let parseUserData = [data:map[str, str]] -> Member{
+	return Member.new(
+		data
+			|> getValue("id")
+			|> default(""),
+		data
+			|> getValue("username")
+			|> default(""),
+		data
+			|> getValue("avatar")
+			|> default(""),
+		(data
+			|> getValue("bot")
+			|> default("True")) == "True")
 
 	}
 }
 
-let parseMessageData = [data:json.value] -> maybe[message] {
+let parseMessageData = [data:json.value] -> maybe[Message] {
 
 	if let <object map> = data {
 
-		return <yes {
-			channel: if let <yes <string ch>> = <getValue "channel_id" map> {<yes ch>} else {none}
-			id: if let <object map> = data {
-				if let <yes <string str>> = <getValue "id" map> {
+		return <yes Message.new(
+			if let <yes <string ch>> = getValue("channel_id", map) {<yes ch>} else {none},
+			if let <object map> = data {
+				if let <yes <string str>> = getValue("id", map) {
 					str
 				} else {
 					""
 				}
 			} else {
 				""
-			}
+			},
 
-			content: if let <object map> = data {
-				if let <yes <string str>> = <getValue "content" map> {
+			if let <object map> = data {
+				if let <yes <string str>> = getValue("content", map) {
 					str
 				} else {
 					""
 				}
 			} else {
 				""
+			},
+			if let <object val> = default(<json.object mapFrom([("", <json.string "">)])>, getValue("author", map) {
+				if let <yes retained> = <jsonToStrMap <json.object val>>{
+					parseUserData(retained)
+										 |> <yes>
+				} else {
+					none
+				}
+			} else {
+				none
 			}
-				sender: if let <object val> = <default <json.object <mapFrom [("", <json.string "">)]>> <getValue "author" map>> {
-							if let <yes retained> = <jsonToStrMap <json.object val>>{
-								<parseUserData retained>
-														|> <yes>
-							} else {
-								none
-							}
-						} else {
-							none
-						}
 
-		}>
+		})>
 	} else {
 		return none
 	}
@@ -155,18 +207,18 @@ let parseMessageData = [data:json.value] -> maybe[message] {
 // public functions
 let pub start = [k:str] -> cmd[bool] {
 	var key = k
-	var header = <mapFrom [
+	var header = mapFrom([
 		("Content-Type", "application/json"),
 		("Authorization", "Bot " + key)
-	]>
-	let r = <request.get "https://discord.com/api/gateway/bot" header>!
+	])
+	let r = request.get("https://discord.com/api/gateway/bot", header)!
 	if r.code /= 200{
 		return false
 	}
 	
 	if let <object map> = r.return {
-		if let <string url> = <default <json.array [<json.string "">]> <getValue "url" map>>{
-			let websocket = <websocket.connect {
+		if let <string url> = default(<json.array [<json.string "">]>, getValue("url" map)){
+			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
 					print "Open!"
 					let _ = <send "hi">!
@@ -177,12 +229,11 @@ let pub start = [k:str] -> cmd[bool] {
 					let _ = <send "hello">!
 					return message == "hello"
 				}
-			} url>!
+			}, url)!
 		} else {
 			return false
 		}
 	} else {
-		print "hmmmm"
 		return false
 	}
 
@@ -194,41 +245,41 @@ let pub getKey = [] -> str{
 }
 
 // Getting users
-let pub getSelf = [] -> cmd[maybe[member]] {
+let pub getSelf = [] -> cmd[maybe[Member]] {
 	// Sends a request to the url
-	let r = <request.get "https://discord.com/api/users/@me" header>!
+	let r = request.get("https://discord.com/api/users/@me", header)!
 	if r.code /= 200{
 		return none
 	}
 
 	if let <yes map> = <jsonToStrMap r.return> {
-		return <parseUserData map>
-								|> <yes>
+		return parseUserData(map)
+							   |> <yes>
 	} else {
 		return none
 	}
 }
 
-let pub getUser = [id:str] -> cmd[maybe[member]] {
+let pub getUser = [id:str] -> cmd[maybe[Member]] {
 	// Uses the id to get the url to send the request to
 	let url:str = "https://discord.com/api/users/" + id
-	let r = <request.get url header>!
+	let r = request.get(url, header)!
 	if r.code /= 200{
 		return none
 	}
 
 	if let <yes map> = <jsonToStrMap r.return> {
-		return <parseUserData map>
-								|> <yes>
+		return <arseUserData(map)
+							   |> <yes>
 	} else {
 		return none
 	}
 }
 
 // Getting Messages
-let pub getMessages = [c:str] -> cmd[maybe[list[message]]] {
+let pub getMessages = [c:str] -> cmd[maybe[list[Message]]] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages"
-	let r = <request.get url header>!
+	let r = request.get(url, header)!
 
 	if r.code /= 200{
 		return none
@@ -236,19 +287,19 @@ let pub getMessages = [c:str] -> cmd[maybe[list[message]]] {
 
 	if let <array list> = r.return{
 		return list
-				 |> <filterMap ([thing: json.value] -> maybe[message] {
+				 |> filterMap(([thing: json.value] -> maybe[message] {
 				 	return thing
-				 		 		|> <parseMessageData>
-				 })>
+				 		 	  |> parseMessageData()
+				 }))
 				 |> <yes>
 	} else {
 		return none
 	}
 }
 
-let pub getMessage = [c:str m:str] -> cmd[maybe[message]] {
+let pub getMessage = [c:str m:str] -> cmd[maybe[Message]] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages/" + m 
-	let r = <request.get url header>!
+	let r = request.get(url, header)!
 
 	if r.code /= 200{
 		return none
@@ -261,7 +312,7 @@ let pub getMessage = [c:str m:str] -> cmd[maybe[message]] {
 // Sending messages/reactions
 let pub sendMessage = [c:str m:str] -> cmd[int] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages"
-	let r = <request.post url <mapFrom [("content", m)]> header>!
+	let r = request.post(url, mapFrom([("content", m)]) header)!
 	print r
 	return r.code
 }
