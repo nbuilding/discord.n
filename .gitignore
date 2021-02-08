@@ -1,0 +1,5 @@
+# Token file
+.token
+
+# Just in case for those odd Mac users
+.DS_Store
