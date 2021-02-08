@@ -16,114 +16,141 @@ type status = online
 			| away
 			| offline
 
-class pub Color {
-	let r:int = 0
-	let g:int = 0
-	let b:int = 0
+class pub Color [red:int green:int blue:int] {
+	let pub getRed = [] -> int {
+		return red
+	}
 
-	Color = [red:int green:int blue:int]{
-		var r = red
-		var g = green
-		var b = blue
+	let pub getGreen = [] -> int {
+		return green
+	}
+
+	let pub getBlue = [] -> int {
+		return blue
 	}
 }
 
-class pub Role {
-	let color:Color = Color.new(0, 0, 0)
-	let name:str = ""
-	let rank:int = 0
+class pub Role [color:Color name:str rank:int] {
+	let pub getColor = [] -> Color {
+		return color
+	}
 
-	Role = [c:Color n:str r:int] {
-		var color = c
-		var name = n
-		var rank = r
+	let pub getName = [] -> str {
+		return name
+	}
+
+	let pub getRank = [] -> int {
+		return rank
 	}
 }
 
-class pub Member {
-	let id:str = ""
-	let name:str = ""
-	let icon:str = ""
-	let bot:bool = false
+class pub Member [id:str name:str icon:str bot:bool] {
+	let pub getId = [] -> str {
+		return id
+	}
 
-	Member = [i:str n:str ic:str b:bool] {
-		var id = i
-		var name = n
-		var icon = ic
-		var bot = b
+	let pub getName = [] -> str {
+		return name
+	}
+
+	let pub getIcon = [] -> str {
+		return icon
+	}
+
+	let pub isBot = [] -> bool {
+		return bot
 	}
 }
 
-class pub Emote {
-	let id:str = ""
-	let name:str = ""
-	let guild:str = ""
-	let animated:bool = false
+class pub Emote [id:str name:str guild:str animated:bool] {
+	let pub getId = [] -> str {
+		return id
+	}
 
-	Emote = [i:str n:str g:str a:bool] {
-		var id = i
-		var name = n
-		var guild = g
-		var animated = a
+	let pub getName = [] -> str {
+		return name
+	}
+
+	let pub getGuild = [] -> str {
+		return guild
+	}
+
+	let pub isAnimated = [] -> bool {
+		return animated
 	}
 }
 
-class pub Guild {
-	let id:str = ""
-	let name:str = ""
-	let emojis:list[Emote] = []
-	let icon:str = ""
-	let members:list[Member] = []
-	let banlist:list[Member] = []
+class pub Guild [id:str name:str emotes:list[Emote] icon:str members:list[Member]] {
+	let pub getId = [] -> str {
+		return id
+	}
 
-	Guild = [i:str n:str e:list[Emote] ic:str m:list[Member] b:list[Member]] {
-		var id = i
-		var name = n
-		var emojis = e
-		var icon = ic
-		var members = m
-		var banlist = b
+	let pub getName = [] -> str {
+		return name
+	}
+
+	let pub getEmotes = [] -> list[Emote] {
+		return emotes
+	}
+
+	let pub getIcon = [] -> str {
+		return icon
+	}
+
+	let pub getMembers = [] -> list[Member] {
+		return members
 	}
 }
 
-class pub Channel {
-	let id:str = ""
-	let name:str = ""
-	let guild:maybe[str] = none
-	let textChannel:bool = true
+class pub Channel [id:str name:str guild:maybe[str] textChannel:bool] {
+	let pub getId = [] -> str {
+		return id
+	}
 
-	Channel = [i:str n:str g:maybe[str] t:bool] {
-		var id = i
-		var name = n
-		var guild = g
-		var textChannel = t
+	let pub getName = [] -> str {
+		return name
+	}
+
+	let pub getGuild = [] -> maybe[str] {
+		return guild
+	}
+
+	let pub isTextChannel = [] -> bool {
+		return textChannel
 	}
 }
 
-class pub Message {
-	let channel:maybe[str] = none
-	let id:str = ""
-	let content:str = ""
-	let sender:maybe[Member] = none
+class pub Message [channel:maybe[str] id:str content:str sender:maybe[Member]] {
+	let pub getChannel = [] -> maybe[str] {
+		return channel
+	}
 
-	Message = [c:maybe[str] i:str co:str s:maybe[Member]] {
-		var channel = c
-		var id = i
-		var content = co
-		var sender = s
+	let pub getId = [] -> str {
+		return id
+	}
+
+	let pub getContent = [] -> str {
+		return content
+	}
+
+	let pub getSender = [] -> maybe[Member] {
+		return sender
 	}
 }
 
-class pub Reaction {
-	let emoji:str = ""
-	let message:Message = Message.new()
-	let sender:Member = Member.new()
-
-	Reaction = [e:str m:Message s:Member] {
-		var emoji = e
-		var message = m
-		var sender = s
+class pub Reaction [emoji:str message:Message sender:Member] {
+	let pub getEmoji = [] -> str {
+		return emoji
 	}
+
+	let pub getMessage = [] -> Message {
+		return message
+	}
+
+	let pub getSender = [] -> Member {
+		return sender
+	}
+
 }
 
 // internal functions
@@ -145,7 +172,7 @@ let jsonToStrMap = [jsonVal: json.value] -> maybe[map[str, str]] {
 }
 
 let parseUserData = [data:map[str, str]] -> Member{
-	return Member.new(
+	return Member(
 		data
 			|> getValue("id")
 			|> default(""),
@@ -165,7 +192,7 @@ let parseMessageData = [data:json.value] -> maybe[Message] {
 
 	if let <object map> = data {
 
-		return yes(Message.new(
+		return yes(Message(
 			if let <yes <string ch>> = getValue("channel_id", map) {yes(ch)} else {none},
 			if let <object map> = data {
 				if let <yes <string str>> = getValue("id", map) {
@@ -286,7 +313,7 @@ let pub getMessages = [c:str] -> cmd[maybe[list[Message]]] {
 
 	if let <array list> = r.return{
 		return list
-				 |> filterMap(([thing: json.value] -> maybe[message] {
+				 |> filterMap(([thing: json.value] -> maybe[Message] {
 				 	return thing
 				 		 	  |> parseMessageData()
 				 }))
