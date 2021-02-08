@@ -1,0 +1,17 @@
+class pub Channel [id:str name:str guild:maybe[str] textChannel:bool] {
+	let pub getId = [] -> str {
+		return id
+	}
+
+	let pub getName = [] -> str {
+		return name
+	}
+
+	let pub getGuild = [] -> maybe[str] {
+		return guild
+	}
+
+	let pub isTextChannel = [] -> bool {
+		return textChannel
+	}
+}

@@ -1,0 +1,17 @@
+let message = imp message
+let member = imp member
+
+class pub Reaction [emoji:str message:message.Message sender:member.Member] {
+	let pub getEmoji = [] -> str {
+		return emoji
+	}
+
+	let pub getMessage = [] -> message.Message {
+		return message
+	}
+
+	let pub getSender = [] -> member.Member {
+		return sender
+	}
+
+}
