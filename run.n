@@ -2,11 +2,24 @@ import FileIO
 
 let discord = imp discord
 
+// Dumb hack because there's a syntax ambiguity with `return ()`
+let unit = ()
+
 let self = [] -> cmd[()]{
-	let token = imp token
-	
-	if discord.start(token.KEY)!{
-		print(discord.getKey())
+	let key = FileIO.read(".token")!
+		|> default("")
+
+	if key = "" {
+		print("Please put your bot token in .token; see README.md for more details.")
+		return unit
+	}
+
+	if discord.start(key)!{
+		print(if discord.getKey() = key {
+			"discord.getKey() is equal to key"
+		} else {
+			"discord.getKey() is NOT equal to key"
+		})
 		print(discord.getSelf()!)
 		print(discord.getUser("384499090865782785")!)
 		print(discord.getMessage("710936824121655396", "803048930567782471")!)
