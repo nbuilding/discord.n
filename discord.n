@@ -117,9 +117,21 @@ let pub start = [k:str] -> cmd[bool] {
 
 	if let <object map> = r.return {
 		if let <string url> = default(json.array([json.string("")]), getValue("url", map)) {
+			let identification = json.object(mapFrom([
+									("d", json.object(mapFrom([
+										("token", json.string(key)),
+										("intents", json.number(32767.0)),
+										("properties", json.object(mapFrom([
+											("$os", json.string("windows")),
+											("$browser", json.string("none")),
+											("$device", json.string("none"))
+										])))
+									])))
+								]))
 			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
 					print("Open!")
+					send(identification)
 					return false
 				}
 				onMessage: [send: websocket.send message: str] -> cmd[bool] {
