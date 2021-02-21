@@ -1,0 +1,16 @@
+let color = imp color
+
+class pub Role [color:color.Color name:str rank:int] {
+	let c = imp color
+	let pub getColor = [] -> c.Color {
+		return color
+	}
+
+	let pub getName = [] -> str {
+		return name
+	}
+
+	let pub getRank = [] -> int {
+		return rank
+	}
+}

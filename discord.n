@@ -2,6 +2,15 @@ import request
 import json
 import websocket
 
+let pub color = imp color
+let pub role = imp role
+let pub member = imp member
+let pub emote = imp emote
+let pub guild = imp guild
+let pub channel = imp channel
+let pub message = imp message
+let pub reaction = imp reaction
+
 // important variables
 let key:str = ""
 
@@ -16,142 +25,6 @@ type status = online
 			| away
 			| offline
 
-class pub Color [red:int green:int blue:int] {
-	let pub getRed = [] -> int {
-		return red
-	}
-
-	let pub getGreen = [] -> int {
-		return green
-	}
-
-	let pub getBlue = [] -> int {
-		return blue
-	}
-}
-
-class pub Role [color:Color name:str rank:int] {
-	let pub getColor = [] -> Color {
-		return color
-	}
-
-	let pub getName = [] -> str {
-		return name
-	}
-
-	let pub getRank = [] -> int {
-		return rank
-	}
-}
-
-class pub Member [id:str name:str icon:str bot:bool] {
-	let pub getId = [] -> str {
-		return id
-	}
-
-	let pub getName = [] -> str {
-		return name
-	}
-
-	let pub getIcon = [] -> str {
-		return icon
-	}
-
-	let pub isBot = [] -> bool {
-		return bot
-	}
-}
-
-class pub Emote [id:str name:str guild:str animated:bool] {
-	let pub getId = [] -> str {
-		return id
-	}
-
-	let pub getName = [] -> str {
-		return name
-	}
-
-	let pub getGuild = [] -> str {
-		return guild
-	}
-
-	let pub isAnimated = [] -> bool {
-		return animated
-	}
-}
-
-class pub Guild [id:str name:str emotes:list[Emote] icon:str members:list[Member]] {
-	let pub getId = [] -> str {
-		return id
-	}
-
-	let pub getName = [] -> str {
-		return name
-	}
-
-	let pub getEmotes = [] -> list[Emote] {
-		return emotes
-	}
-
-	let pub getIcon = [] -> str {
-		return icon
-	}
-
-	let pub getMembers = [] -> list[Member] {
-		return members
-	}
-}
-
-class pub Channel [id:str name:str guild:maybe[str] textChannel:bool] {
-	let pub getId = [] -> str {
-		return id
-	}
-
-	let pub getName = [] -> str {
-		return name
-	}
-
-	let pub getGuild = [] -> maybe[str] {
-		return guild
-	}
-
-	let pub isTextChannel = [] -> bool {
-		return textChannel
-	}
-}
-
-class pub Message [channel:maybe[str] id:str content:str sender:maybe[Member]] {
-	let pub getChannel = [] -> maybe[str] {
-		return channel
-	}
-
-	let pub getId = [] -> str {
-		return id
-	}
-
-	let pub getContent = [] -> str {
-		return content
-	}
-
-	let pub getSender = [] -> maybe[Member] {
-		return sender
-	}
-}
-
-class pub Reaction [emoji:str message:Message sender:Member] {
-	let pub getEmoji = [] -> str {
-		return emoji
-	}
-
-	let pub getMessage = [] -> Message {
-		return message
-	}
-
-	let pub getSender = [] -> Member {
-		return sender
-	}
-
-}
 
 // internal functions
 let jsonToStrMap = [jsonVal: json.value] -> maybe[map[str, str]] {
@@ -171,8 +44,8 @@ let jsonToStrMap = [jsonVal: json.value] -> maybe[map[str, str]] {
 	}
 }
 
-let parseUserData = [data:map[str, str]] -> Member{
-	return Member(
+let parseUserData = [data:map[str, str]] -> member.Member{
+	return member.Member(
 		data
 			|> getValue("id")
 			|> default(""),
@@ -188,11 +61,11 @@ let parseUserData = [data:map[str, str]] -> Member{
 	)
 }
 
-let parseMessageData = [data:json.value] -> maybe[Message] {
+let parseMessageData = [data:json.value] -> maybe[message.Message] {
 
 	if let <object map> = data {
 
-		return yes(Message(
+		return yes(message.Message(
 			if let <yes <string ch>> = getValue("channel_id", map) {yes(ch)} else {none},
 			if let <object map> = data {
 				if let <yes <string str>> = getValue("id", map) {
@@ -244,16 +117,25 @@ let pub start = [k:str] -> cmd[bool] {
 
 	if let <object map> = r.return {
 		if let <string url> = default(json.array([json.string("")]), getValue("url", map)) {
+			let identification = json.object(mapFrom([
+									("d", json.object(mapFrom([
+										("token", json.string(key)),
+										("intents", json.number(32767.0)),
+										("properties", json.object(mapFrom([
+											("$os", json.string("windows")),
+											("$browser", json.string("none")),
+											("$device", json.string("none"))
+										])))
+									])))
+								]))
 			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
 					print("Open!")
-					let _ = send("hi")!
+					send(identification)
 					return false
 				}
 				onMessage: [send: websocket.send message: str] -> cmd[bool] {
 					print(message)
-					let _ = send("hello")!
-					return message == "hello"
 				}
 			}, url)!
 		} else {
@@ -271,7 +153,7 @@ let pub getKey = [] -> str{
 }
 
 // Getting users
-let pub getSelf = [] -> cmd[maybe[Member]] {
+let pub getSelf = [] -> cmd[maybe[member.Member]] {
 	// Sends a request to the url
 	let r = request.get("https://discord.com/api/users/@me", header)!
 	if r.code /= 200{
@@ -286,7 +168,7 @@ let pub getSelf = [] -> cmd[maybe[Member]] {
 	}
 }
 
-let pub getUser = [id:str] -> cmd[maybe[Member]] {
+let pub getUser = [id:str] -> cmd[maybe[member.Member]] {
 	// Uses the id to get the url to send the request to
 	let url:str = "https://discord.com/api/users/" + id
 	let r = request.get(url, header)!
@@ -303,7 +185,7 @@ let pub getUser = [id:str] -> cmd[maybe[Member]] {
 }
 
 // Getting Messages
-let pub getMessages = [c:str] -> cmd[maybe[list[Message]]] {
+let pub getMessages = [c:str] -> cmd[maybe[list[message.Message]]] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages"
 	let r = request.get(url, header)!
 
@@ -313,7 +195,7 @@ let pub getMessages = [c:str] -> cmd[maybe[list[Message]]] {
 
 	if let <array list> = r.return{
 		return list
-				 |> filterMap(([thing: json.value] -> maybe[Message] {
+				 |> filterMap(([thing: json.value] -> maybe[message.Message] {
 				 	return thing
 				 		 	  |> parseMessageData()
 				 }))
@@ -323,7 +205,7 @@ let pub getMessages = [c:str] -> cmd[maybe[list[Message]]] {
 	}
 }
 
-let pub getMessage = [c:str m:str] -> cmd[maybe[Message]] {
+let pub getMessage = [c:str m:str] -> cmd[maybe[message.Message]] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages/" + m
 	let r = request.get(url, header)!
 
