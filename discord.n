@@ -131,7 +131,7 @@ let pub start = [k:str] -> cmd[bool] {
 			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
 					print("Open!")
-					send(identification)
+					send(json.stringify(identification))
 					return false
 				}
 				onMessage: [send: websocket.send message: str] -> cmd[bool] {
