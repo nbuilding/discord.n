@@ -117,15 +117,24 @@ let pub start = [k:str] -> cmd[bool] {
 
 	if let <object map> = r.return {
 		if let <string url> = default(json.array([json.string("")]), getValue("url", map)) {
+			// https://discord.com/developers/docs/topics/gateway#identifying
 			let identification = json.object(mapFrom([
+									("op", json.number(2.0)),
 									("d", json.object(mapFrom([
 										("token", json.string(key)),
-										("intents", json.number(32767.0)),
+										("intents", json.number(513.0)),
 										("properties", json.object(mapFrom([
 											("$os", json.string("windows")),
 											("$browser", json.string("none")),
 											("$device", json.string("none"))
-										])))
+										]))),
+										("presence", json.object(mapFrom([
+											("since", json.null),
+											("activities", json.null),
+											("status", json.string("online")),
+											("afk", json.boolean(false))
+										]))),
+										("intents", json.number(7.0))
 									])))
 								]))
 			let websocket = websocket.connect({
@@ -135,7 +144,12 @@ let pub start = [k:str] -> cmd[bool] {
 					return false
 				}
 				onMessage: [send: websocket.send message: str] -> cmd[bool] {
-					print(message)
+					if let <yes parsedMessage> = json.parseSafe(message) {
+						print(parsedMessage)
+					} else {
+						print(message)
+					}
+					return false
 				}
 			}, url)!
 		} else {
