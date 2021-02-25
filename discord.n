@@ -140,12 +140,24 @@ let pub start = [k:str] -> cmd[bool] {
 			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
 					print("Open!")
-					send(json.stringify(identification))
 					return false
 				}
 				onMessage: [send: websocket.send message: str] -> cmd[bool] {
 					if let <yes parsedMessage> = json.parseSafe(message) {
-						print(parsedMessage)
+						if let <object messageData> = parsedMessage {
+							if let <yes <number opCode>> = getValue("op", messageData) {
+								print(parsedMessage)
+								if opCode == 10.0 {
+									print("heartbeat sent")
+									send(json.stringify(json.object(mapFrom([
+										("op", json.number(1.0)),
+										("d", json.null)
+									]))))
+								}
+							}
+						} else {
+							print(parsedMessage)
+						}
 					} else {
 						print(message)
 					}
