@@ -122,7 +122,6 @@ let pub start = [k:str] -> cmd[bool] {
 									("op", json.number(2.0)),
 									("d", json.object(mapFrom([
 										("token", json.string(key)),
-										("intents", json.number(513.0)),
 										("properties", json.object(mapFrom([
 											("$os", json.string("windows")),
 											("$browser", json.string("none")),
@@ -139,7 +138,6 @@ let pub start = [k:str] -> cmd[bool] {
 								]))
 			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
-					print("Open!")
 					return false
 				}
 				onMessage: [send: websocket.send message: str] -> cmd[bool] {
@@ -148,11 +146,7 @@ let pub start = [k:str] -> cmd[bool] {
 							if let <yes <number opCode>> = getValue("op", messageData) {
 								print(parsedMessage)
 								if opCode == 10.0 {
-									print("heartbeat sent")
-									send(json.stringify(json.object(mapFrom([
-										("op", json.number(1.0)),
-										("d", json.null)
-									]))))
+									send(json.stringify(identification))
 								}
 							}
 						} else {
