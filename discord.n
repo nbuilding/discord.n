@@ -146,7 +146,8 @@ let pub start = [k:str] -> cmd[bool] {
 							if let <yes <number opCode>> = getValue("op", messageData) {
 								print(parsedMessage)
 								if opCode == 10.0 {
-									send(json.stringify(identification))
+									print("Hello recived")
+									print(send(json.stringify(identification))!)
 								}
 							}
 						} else {
