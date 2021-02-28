@@ -138,6 +138,7 @@ let pub start = [k:str] -> cmd[bool] {
 								]))
 			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
+					let senddata = send(json.stringify(identification))!
 					return false
 				}
 				onMessage: [send: websocket.send message: str] -> cmd[bool] {
@@ -147,7 +148,6 @@ let pub start = [k:str] -> cmd[bool] {
 								print(parsedMessage)
 								if opCode == 10.0 {
 									print("Hello recived")
-									print(send(json.stringify(identification))!)
 								}
 							}
 						} else {
