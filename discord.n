@@ -104,70 +104,6 @@ let parseMessageData = [data:json.value] -> maybe[message.Message] {
 }
 
 // public functions
-let pub start = [k:str] -> cmd[bool] {
-	var key = k
-	var header = mapFrom([
-		("Content-Type", "application/json"),
-		("Authorization", "Bot " + key)
-	])
-	let r = request.get("https://discord.com/api/gateway/bot", header)!
-	if r.code /= 200{
-		return false
-	}
-
-	if let <object map> = r.return {
-		if let <string url> = default(json.array([json.string("")]), getValue("url", map)) {
-			// https://discord.com/developers/docs/topics/gateway#identifying
-			let identification = json.object(mapFrom([
-									("op", json.number(2.0)),
-									("d", json.object(mapFrom([
-										("token", json.string(key)),
-										("properties", json.object(mapFrom([
-											("$os", json.string("windows")),
-											("$browser", json.string("none")),
-											("$device", json.string("none"))
-										]))),
-										("presence", json.object(mapFrom([
-											("since", json.null),
-											("activities", json.null),
-											("status", json.string("online")),
-											("afk", json.boolean(false))
-										]))),
-										("intents", json.number(7.0))
-									])))
-								]))
-			let websocket = websocket.connect({
-				onOpen: [send: websocket.send] -> cmd[bool] {
-					let senddata = send(json.stringify(identification))!
-					return false
-				}
-				onMessage: [send: websocket.send message: str] -> cmd[bool] {
-					if let <yes parsedMessage> = json.parseSafe(message) {
-						if let <object messageData> = parsedMessage {
-							if let <yes <number opCode>> = getValue("op", messageData) {
-								print(parsedMessage)
-								if opCode == 10.0 {
-									print("Hello recived")
-								}
-							}
-						} else {
-							print(parsedMessage)
-						}
-					} else {
-						print(message)
-					}
-					return false
-				}
-			}, url)!
-		} else {
-			return false
-		}
-	} else {
-		return false
-	}
-
-	return true
-}
 
 let pub getKey = [] -> str{
 	return key
@@ -244,4 +180,70 @@ let pub sendMessage = [c:str m:str] -> cmd[int] {
 	let r = request.post(url, mapFrom([("content", m)]), header)!
 	print(r)
 	return r.code
+}
+
+let pub start = [k:str] -> cmd[bool] {
+	var key = k
+	var header = mapFrom([
+		("Content-Type", "application/json"),
+		("Authorization", "Bot " + key)
+	])
+	let r = request.get("https://discord.com/api/gateway/bot", header)!
+	if r.code /= 200{
+		return false
+	}
+
+	if let <object map> = r.return {
+		if let <string url> = default(json.array([json.string("")]), getValue("url", map)) {
+			// https://discord.com/developers/docs/topics/gateway#identifying
+			let identification = json.object(mapFrom([
+									("op", json.number(2.0)),
+									("d", json.object(mapFrom([
+										("token", json.string(key)),
+										("properties", json.object(mapFrom([
+											("$os", json.string("windows")),
+											("$browser", json.string("none")),
+											("$device", json.string("none"))
+										]))),
+										("presence", json.object(mapFrom([
+											("since", json.null),
+											("activities", json.null),
+											("status", json.string("online")),
+											("afk", json.boolean(false))
+										]))),
+										("intents", json.number(7.0))
+									])))
+								]))
+			let websocket = websocket.connect({
+				onOpen: [send: websocket.send] -> cmd[bool] {
+					let senddata = send(json.stringify(identification))!
+					return false
+				}
+				onMessage: [send: websocket.send message: str] -> cmd[bool] {
+					if let <yes parsedMessage> = json.parseSafe(message) {
+						if let <object messageData> = parsedMessage {
+							if let <yes <number opCode>> = getValue("op", messageData) {
+								print(parsedMessage)
+								if opCode == 10.0 {
+									print(parsedMessage)
+								}
+							}
+						} else {
+							print(parsedMessage)
+						}
+					} else {
+						print(message)
+					}
+					return false
+				}
+			}, url)!
+			return true
+		} else {
+			return false
+		}
+	} else {
+		return false
+	}
+
+	return true
 }
