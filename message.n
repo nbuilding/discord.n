@@ -1,8 +1,8 @@
 let member = imp member
 
-class pub Message [channel:maybe[str] id:str content:str sender:maybe[member.Member]] {
+class pub Message [channel:str id:str content:str sender:member.Member] {
 	// TODO: make this return a channel object
-	let pub getChannel = [] -> maybe[str] {
+	let pub getChannel = [] -> str {
 		return channel
 	}
 
@@ -14,7 +14,7 @@ class pub Message [channel:maybe[str] id:str content:str sender:maybe[member.Mem
 		return content
 	}
 
-	let pub getSender = [] -> maybe[member.Member] {
+	let pub getSender = [] -> member.Member {
 		return sender
 	}
 }

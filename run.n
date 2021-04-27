@@ -4,8 +4,26 @@ let token = imp token
 
 let discord = imp discord
 
-// Dumb hack because there's a syntax ambiguity with `return ()`
-let unit = ()
+let responses = {
+	/* onReady: [] -> cmd[()] {
+		print("Bot is up!")
+	} */
+	onMessage: [message:discord.message.Message] -> cmd[bool] {
+		print(message.getContent())
+		if message.getSender().getId() == "799715319127736392" {
+			return false
+		}
+		if message.getContent() == "ntest" {
+			let _ = discord.sendMessage(message.getChannel(), "testing")!
+		}
+		if message.getContent() == "nexit" && message.getSender().getId() == "384499090865782785" {
+			print("exiting...")
+			return true
+		} 
+
+		return false
+	}
+}
 
 let self = [] -> cmd[()]{
 	let key = FileIO.read(".token")!
@@ -15,19 +33,8 @@ let self = [] -> cmd[()]{
 		var key = token.KEY
 	}
 
-	if discord.start(key)!{
-		print(if discord.getKey() = key {
-			" discord.getKey() is equal to key"
-		} else {
-			" discord.getKey() is NOT equal to key"
-		})
-		print(discord.getSelf()!)
-		print(discord.getUser("384499090865782785")!)
-		print(discord.getMessage("710936824121655396", "803048930567782471")!)
-		// print(discord.sendMessage("660903404977127426", "Online")!)
-	} else {
-		print("key is not valid")
-	}
+	let _ = discord.start(key, responses)!
+		
 }
 
 let pub main = self()
