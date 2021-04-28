@@ -2,14 +2,16 @@ import request
 import json
 import websocket
 
-let pub color = imp color
-let pub role = imp role
-let pub member = imp member
-let pub emote = imp emote
-let pub guild = imp guild
-let pub channel = imp channel
-let pub message = imp message
-let pub reaction = imp reaction
+let pub color = imp "./color.n"
+let pub role = imp "./role.n"
+let pub member = imp "./member.n"
+let pub emote = imp "./emote.n"
+let pub guild = imp "./guild.n"
+let pub channel = imp "./channel.n"
+let pub message = imp "./message.n"
+let pub reaction = imp "./reaction.n"
+let pub status = imp "./status.n"
+
 
 // important variables
 let key:str = ""
@@ -115,9 +117,31 @@ let removeJSONArtifacts = [input:str] -> str {
 	return out
 }
 
-// public functions
+let parseStatus = [input:status.Status] -> json.value {
+	if let <yes since> = input.getSince() {
+		return json.object(mapFrom([
+			("since", json.number(since^1)),
+			("activities", json.array([json.object(mapFrom([
+				("name", json.string(input.getActivity().name)),
+				("type", json.number(input.getActivity().type^1)),
+			]))])),
+			("status", json.string(input.getStatus())),
+			("since", json.boolean(input.isAfk())),
+		]))
+	}
 
-let pub getKey = [] -> str{
+	return json.object(mapFrom([
+		("activities", json.array([json.object(mapFrom([
+			("name", json.string(input.getActivity().name)),
+			("type", json.number(input.getActivity().type^1)),
+		]))])),
+		("status", json.string(input.getStatus())),
+		("since", json.boolean(input.isAfk())),
+	]))
+}
+
+// public functions
+let pub getKey = [] -> str {
 	return key
 }
 
@@ -200,11 +224,10 @@ let pub getMessage = [c:str m:str] -> cmd[maybe[message.Message]] {
 let pub sendMessage = [c:str m:str] -> cmd[int] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages"
 	let r = request.post(url, mapFrom([("content", m)]), header)!
-	print(r)
 	return r.code
 }
 
-let pub start = [k:str responses:responsesRecord] -> cmd[bool] {
+let pub start = [k:str presence:status.Status responses:responsesRecord] -> cmd[bool] {
 	var key = k
 	var header = mapFrom([
 		("Content-Type", "application/json"),
@@ -228,6 +251,7 @@ let pub start = [k:str responses:responsesRecord] -> cmd[bool] {
 											("$browser", json.string("none")),
 											("$device", json.string("none"))
 										]))),
+										("presence", parseStatus(presence))
 									])))
 								]))
 			let websocket = websocket.connect({

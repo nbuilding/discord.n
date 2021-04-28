@@ -1,0 +1,26 @@
+class pub Status [since:maybe[int] activity:{ name:str; type:int } status:str afk:bool] {
+
+	let pub getSince = [] -> maybe[int] {
+		return since
+	}
+
+	let pub getActivity = [] -> { name:str; type:int } {
+		return activity
+	}
+
+	let pub getStatus = [] -> str {
+		return status
+	}
+
+	let pub isAfk = [] -> bool {
+		return afk
+	}
+}
+
+let pub activity = {
+	GAME: 0
+	STREAMING: 1
+	LISTENING: 2
+	WATCHING: 3
+	COMPETING: 5
+}

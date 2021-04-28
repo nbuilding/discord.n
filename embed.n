@@ -1,0 +1,5 @@
+let color = imp "./color.n"
+
+class pub Embed [title:maybe[str] type:str description:maybe[str] url:maybe[str] color:maybe[color.Color]] {
+	// TODO: the whole class
+}

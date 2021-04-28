@@ -1,4 +1,5 @@
 import FileIO
+import json
 
 let token = imp token
 
@@ -25,6 +26,16 @@ let responses = {
 	}
 }
 
+let presence = discord.status.Status(
+	none,
+	{
+		name: "the output logs"
+		type: discord.status.activity.WATCHING
+	},
+	"online",
+	false
+)
+
 let self = [] -> cmd[()]{
 	let key = FileIO.read(".token")!
 		|> default("")
@@ -33,7 +44,7 @@ let self = [] -> cmd[()]{
 		var key = token.KEY
 	}
 
-	let _ = discord.start(key, responses)!
+	let _ = discord.start(key, presence, responses)!
 		
 }
 
