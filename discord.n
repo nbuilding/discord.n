@@ -28,7 +28,7 @@ type status = online
 			| offline
 
 alias responsesRecord = {
-	//onReady: cmd[()]
+	onReady: member.Member -> cmd[()]
 	onMessage: message.Message -> cmd[bool]
 }
 
@@ -95,26 +95,6 @@ let parseMessageData = [data:map[str, json.value]] -> message.Message {
 			member.Member("", "", "", false)
 		}
 	)
-}
-
-let removeJSONArtifacts = [input:str] -> str {
-	let out = ""
-	let skip = false
-	for (i in range(0, len(input) - 1, 1)) {
-		if substring(i, i + 2, input) == ".0" {
-			var skip = true
-		} else if skip {
-			var skip = false
-		} else {
-			var out = out + (charAt(i, input) |> default(\{ }))
-		}
-		
-	}
-	if ~skip {
-		var out = out + (charAt(len(input) - 1, input) |> default(\{ }))
-	} 
-
-	return out
 }
 
 let parseStatus = [input:status.Status] -> json.value {
@@ -256,7 +236,7 @@ let pub start = [k:str presence:status.Status responses:responsesRecord] -> cmd[
 								]))
 			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
-					let senddata = send(json.stringify(identification) |> removeJSONArtifacts)!
+					let senddata = send(json.stringify(identification))!
 					return false
 				}
 				onMessage: [send: websocket.send message: str] -> cmd[bool] {
@@ -267,7 +247,11 @@ let pub start = [k:str presence:status.Status responses:responsesRecord] -> cmd[
 								if opCode == 0.0 {
 									if let <yes <string messageType>> = getValue("t", messageData) {
 										if messageType == "READY" {
-											//let _ = responses.onReady!
+											if let <yes <object data>> = getValue("d", messageData) {
+												if let <yes <object userData>> = getValue("user", data) {
+													let _ = responses.onReady(parseUserData(userData))!
+												}
+											}
 										}
 										if messageType == "MESSAGE_CREATE" {
 											if let <yes <object data>> = getValue("d", messageData) {

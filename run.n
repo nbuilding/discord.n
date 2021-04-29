@@ -6,14 +6,16 @@ let token = imp token
 let discord = imp discord
 
 let responses = {
-	/* onReady: [] -> cmd[()] {
+	onReady: [self:discord.member.Member] -> cmd[()] {
 		print("Bot is up!")
-	} */
+	}
 	onMessage: [message:discord.message.Message] -> cmd[bool] {
-		print(message.getContent())
 		if message.getSender().getId() == "799715319127736392" {
 			return false
 		}
+
+		print(message.getContent())
+
 		if message.getContent() == "ntest" {
 			let _ = discord.sendMessage(message.getChannel(), "testing")!
 		}
