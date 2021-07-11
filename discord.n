@@ -1,6 +1,7 @@
 import request
 import json
 import websocket
+import times
 
 let pub color = imp "./color.n"
 let pub role = imp "./role.n"
@@ -27,9 +28,89 @@ type status = online
 			| away
 			| offline
 
-alias responsesRecord = {
-	onReady: member.Member -> cmd[()]
-	onMessage: message.Message -> cmd[bool]
+alias pub responsesRecord = {
+	onReady: maybe[member.Member -> cmd[()]]
+
+	onGuildCreate: maybe[guild.Guild -> cmd[bool]]
+	onGuildUpdate: maybe[guild.Guild -> cmd[bool]]
+	onGuildDelete: maybe[guild.Guild -> cmd[bool]]
+	onGuildRoleCreate: maybe[role.Role -> cmd[bool]]
+	onGuildRoleUpdate: maybe[role.Role -> cmd[bool]]
+	onGuildRoleDelete: maybe[role.Role -> cmd[bool]]
+	onChannelCreate: maybe[channel.Channel -> cmd[bool]]
+	onChannelUpdate: maybe[channel.Channel -> cmd[bool]]
+	onChannelDelete: maybe[channel.Channel -> cmd[bool]]
+	onChannelPinsCreate: maybe[channel.Channel -> cmd[bool]]
+
+	onGuildMemberAdd: maybe[list[member.Member] -> cmd[bool]]
+	onGuildMemberUpdate: maybe[list[member.Member] -> cmd[bool]]
+	onGuildMemberRemove: maybe[list[member.Member] -> cmd[bool]]
+
+	onGuildBanAdd: maybe[list[member.Member] -> cmd[bool]]
+	onGuildBanRemove: maybe[list[member.Member] -> cmd[bool]]
+
+	onGuildEmojisUpdate: maybe[list[emote.Emote] -> cmd[bool]]
+
+	onMessage: maybe[message.Message -> cmd[bool]]
+	onMessageUpdate: maybe[message.Message -> cmd[bool]]
+	onMessageDelete: maybe[message.Message -> cmd[bool]]
+	onMessageDeleteBulk: maybe[list[message.Message] -> cmd[bool]]
+
+	onMessageReactionAdd: maybe[message.Message -> cmd[bool]]
+	onMessageReactionRemove: maybe[message.Message -> cmd[bool]]
+	onMessageReactionRemoveAll: maybe[message.Message -> cmd[bool]]
+
+	onDirectMessage: maybe[message.Message -> cmd[bool]]
+	onDirectMessageUpdate: maybe[message.Message -> cmd[bool]]
+	onDirectMessageDelete: maybe[message.Message -> cmd[bool]]
+	onDirectMessagePinsUpdate: maybe[channel.Channel -> cmd[bool]]
+
+	onDirectMessageReactionAdd: maybe[message.Message -> cmd[bool]]
+	onDirectMessageReactionRemove: maybe[message.Message -> cmd[bool]]
+	onDirectMessageReactionRemoveAll: maybe[message.Message -> cmd[bool]]
+}
+
+// empty responses template
+let pub responsesEmpty = {
+	onReady: none
+
+	onGuildCreate: none
+	onGuildUpdate: none
+	onGuildDelete: none
+	onGuildRoleCreate: none
+	onGuildRoleUpdate: none
+	onGuildRoleDelete: none
+	onChannelCreate: none
+	onChannelUpdate: none
+	onChannelDelete: none
+	onChannelPinsCreate: none
+
+	onGuildMemberAdd: none
+	onGuildMemberUpdate: none
+	onGuildMemberRemove: none
+
+	onGuildBanAdd: none
+	onGuildBanRemove: none
+
+	onGuildEmojisUpdate: none
+
+	onMessage: none
+	onMessageUpdate: none
+	onMessageDelete: none
+	onMessageDeleteBulk: none
+
+	onMessageReactionAdd: none
+	onMessageReactionRemove: none
+	onMessageReactionRemoveAll: none
+
+	onDirectMessage: none
+	onDirectMessageUpdate: none
+	onDirectMessageDelete: none
+	onDirectMessagePinsUpdate: none
+
+	onDirectMessageReactionAdd: none
+	onDirectMessageReactionRemove: none
+	onDirectMessageReactionRemoveAll: none
 }
 
 // internal functions
@@ -234,45 +315,78 @@ let pub start = [k:str presence:status.Status responses:responsesRecord] -> cmd[
 										("presence", parseStatus(presence))
 									])))
 								]))
+			let heartbeatInterval = 1000.0
+			let lastSequenceNumber:maybe[float] = none
+			let stopWhile = false
 			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
 					let senddata = send(json.stringify(identification))!
-					return false
+					let _ = times.sleep(1000)!
+					let _ = send(json.stringify(json.object(mapFrom([
+						("op", json.number(1.0)),
+						("d", if let <yes lsn> = lastSequenceNumber { json.number(lsn) } else { json.null })
+					]))))!
+					while (true) {
+						let _ = times.sleep(floor(heartbeatInterval))!
+						let _ = send(json.stringify(json.object(mapFrom([
+							("op", json.number(1.0)),
+							("d", if let <yes lsn> = lastSequenceNumber { json.number(lsn) } else { json.null })
+						]))))!
+						if (stopWhile) {
+							return true
+						}
+					}
+					return true
 				}
 				onMessage: [send: websocket.send message: str] -> cmd[bool] {
 					let stop = false
 					if let <yes parsedMessage> = json.parseSafe(message) {
 						if let <object messageData> = parsedMessage {
 							if let <yes <number opCode>> = getValue("op", messageData) {
-								if opCode == 0.0 {
+								if opCode == 10.0 {
+									if let <yes <object dataSent>> = getValue("d", messageData) {
+										if let <yes <number heartbeatTiming>> = getValue("heartbeat_interval", dataSent) {
+											var heartbeatInterval = heartbeatTiming
+										}
+									}
+								} // 10 is hello
+								else if opCode == 0.0 {
 									if let <yes <string messageType>> = getValue("t", messageData) {
 										if messageType == "READY" {
 											if let <yes <object data>> = getValue("d", messageData) {
 												if let <yes <object userData>> = getValue("user", data) {
-													let _ = responses.onReady(parseUserData(userData))!
+													if let <yes runFunc> = responses.onReady {
+														let _ = runFunc(parseUserData(userData))!
+													}
 												}
 											}
 										}
 										if messageType == "MESSAGE_CREATE" {
 											if let <yes <object data>> = getValue("d", messageData) {
-												var stop = responses.onMessage(parseMessageData(data))!
+												if let <yes runFunc> = responses.onMessage {
+														let _ = runFunc(parseMessageData(data))!
+													}
 											}
 										}
 									}
 								} // 0 is dispatch
+								else if opCode == 11.0 {}
+								else {
+									print(parsedMessage)
+								}
 							}
 						}
 					}
+					var stopWhile = stop
 					return stop
 				}
-			}, url + "/?v=8&encoding=json")!
+			}, url + "/?v=9&encoding=json")!
+
 			return true
 		} else {
 			return false
 		}
-	} else {
-		return false
 	}
-
-	return true
+	
+	return false
 }

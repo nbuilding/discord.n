@@ -5,11 +5,14 @@ let token = imp token
 
 let discord = imp discord
 
+let empty = discord.responsesEmpty
+
 let responses = {
-	onReady: [self:discord.member.Member] -> cmd[()] {
+	..empty
+	onReady: yes([self:discord.member.Member] -> cmd[()] {
 		print("Bot is up!")
-	}
-	onMessage: [message:discord.message.Message] -> cmd[bool] {
+	})
+	onMessage: yes([message:discord.message.Message] -> cmd[bool] {
 		if message.getSender().getId() == "799715319127736392" {
 			return false
 		}
@@ -17,7 +20,10 @@ let responses = {
 		print(message.getContent())
 
 		if message.getContent() == "ntest" {
-			let _ = discord.sendMessage(message.getChannel(), "testing")!
+			let response = discord.sendMessage(message.getChannel(), "testing")!
+			if response /= 200 {
+				print("unable to send message")
+			}
 		}
 		if message.getContent() == "nexit" && message.getSender().getId() == "384499090865782785" {
 			print("exiting...")
@@ -25,7 +31,7 @@ let responses = {
 		} 
 
 		return false
-	}
+	})
 }
 
 let presence = discord.status.Status(
