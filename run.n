@@ -5,10 +5,8 @@ let token = imp token
 
 let discord = imp discord
 
-let empty = discord.responsesEmpty
-
 let responses = {
-	..empty
+	..discord.responsesEmpty
 	onReady: yes([self:discord.member.Member] -> cmd[()] {
 		print("Bot is up!")
 	})

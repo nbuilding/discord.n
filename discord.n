@@ -317,7 +317,7 @@ let pub start = [k:str presence:status.Status responses:responsesRecord] -> cmd[
 								]))
 			let heartbeatInterval = 1000.0
 			let lastSequenceNumber:maybe[float] = none
-			let stopWhile = false
+			let stopNow = false
 			let websocket = websocket.connect({
 				onOpen: [send: websocket.send] -> cmd[bool] {
 					let senddata = send(json.stringify(identification))!
@@ -327,14 +327,17 @@ let pub start = [k:str presence:status.Status responses:responsesRecord] -> cmd[
 						("d", if let <yes lsn> = lastSequenceNumber { json.number(lsn) } else { json.null })
 					]))))!
 					while (true) {
+						let nextTime = times.getTime()! + floor(heartbeatInterval)
+						while (times.getTime()! < nextTime) {
+							if (stopNow) {
+								return true
+							}
+						}
 						let _ = times.sleep(floor(heartbeatInterval))!
 						let _ = send(json.stringify(json.object(mapFrom([
 							("op", json.number(1.0)),
 							("d", if let <yes lsn> = lastSequenceNumber { json.number(lsn) } else { json.null })
 						]))))!
-						if (stopWhile) {
-							return true
-						}
 					}
 					return true
 				}
@@ -364,20 +367,26 @@ let pub start = [k:str presence:status.Status responses:responsesRecord] -> cmd[
 										if messageType == "MESSAGE_CREATE" {
 											if let <yes <object data>> = getValue("d", messageData) {
 												if let <yes runFunc> = responses.onMessage {
-														let _ = runFunc(parseMessageData(data))!
+														var stop = runFunc(parseMessageData(data))!
 													}
 											}
 										}
 									}
 								} // 0 is dispatch
-								else if opCode == 11.0 {}
+								else if opCode == 11.0 {} // 11 is heatbeat acknowledgement
+								else if opCode == 7.0 {
+									let _ = send(json.stringify(json.object(mapFrom([
+										("op", json.number(7.0)),
+										("d", json.null),
+									]))))!
+								} // 7 is reconnect requests
 								else {
 									print(parsedMessage)
 								}
 							}
 						}
 					}
-					var stopWhile = stop
+					var stopNow = if (stop) { true } else { stopNow }
 					return stop
 				}
 			}, url + "/?v=9&encoding=json")!
