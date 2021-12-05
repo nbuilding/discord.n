@@ -6,11 +6,11 @@ let token = imp token
 let discord = imp discord
 
 let responses = {
-	..discord.responsesEmpty
-	onReady: yes([self:discord.member.Member] -> cmd[()] {
+	..discord.responsesEmpty,
+	onReady: yes((self:discord.member.Member) -> cmd[()] {
 		print("Bot is up!")
-	})
-	onMessage: yes([message:discord.message.Message] -> cmd[bool] {
+	}),
+	onMessage: yes((message:discord.message.Message) -> cmd[bool] {
 		if message.getSender().getId() == "799715319127736392" {
 			return false
 		}
@@ -19,7 +19,7 @@ let responses = {
 
 		if message.getContent() == "ntest" {
 			let response = discord.sendMessage(message.getChannel(), "testing")!
-			if response /= 200 {
+			if response ~= 200 {
 				print("unable to send message")
 			}
 		}
@@ -29,28 +29,27 @@ let responses = {
 		} 
 
 		return false
-	})
+	}),
 }
 
 let presence = discord.status.Status(
 	none,
 	{
-		name: "the output logs"
-		type: discord.status.activity.WATCHING
+		name: "the output logs",
+		type: discord.status.activity.WATCHING,
 	},
 	"online",
 	false
 )
 
-let self = [] -> cmd[()]{
-	let key = FileIO.read(".token")!
-		|> default("")
+let self = () -> cmd[()] {
+	let mut key = FileIO.read(".token")! | ""
 
 	if key == "" {
-		var key = token.KEY
+		key = token.KEY
 	}
 
-	let _ = discord.start(key, presence, responses)!
+	print(discord.start(key, presence, responses)!)
 		
 }
 

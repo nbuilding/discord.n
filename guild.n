@@ -1,24 +1,24 @@
 let member = imp member
 let emote = imp emote
 
-class pub Guild [id:str name:str emotes:list[emote.Emote] icon:str members:list[member.Member]] {
-	let pub getId = [] -> str {
+class pub Guild (id:str, name:str, emotes:list[emote.Emote], icon:str, members:list[member.Member]) {
+	let pub getId = () -> str {
 		return id
 	}
 
-	let pub getName = [] -> str {
+	let pub getName = () -> str {
 		return name
 	}
 
-	let pub getEmotes = [] -> list[emote.Emote] {
+	let pub getEmotes = () -> list[emote.Emote] {
 		return emotes
 	}
 
-	let pub getIcon = [] -> str {
+	let pub getIcon = () -> str {
 		return icon
 	}
 
-	let pub getMembers = [] -> list[member.Member] {
+	let pub getMembers = () -> list[member.Member] {
 		return members
 	}
 }

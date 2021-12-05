@@ -1,17 +1,17 @@
-class pub Emote [id:str name:str guild:str animated:bool] {
-	let pub getId = [] -> str {
+class pub Emote (id:str, name:str, guild:str, animated:bool) {
+	let pub getId = () -> str {
 		return id
 	}
 
-	let pub getName = [] -> str {
+	let pub getName = () -> str {
 		return name
 	}
 
-	let pub getGuild = [] -> str {
+	let pub getGuild = () -> str {
 		return guild
 	}
 
-	let pub isAnimated = [] -> bool {
+	let pub isAnimated = () -> bool {
 		return animated
 	}
 }

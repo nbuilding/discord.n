@@ -1,17 +1,17 @@
-class pub Member [id:str name:str icon:str bot:bool] {
-	let pub getId = [] -> str {
+class pub Member (id:str, name:str, icon:str, bot:bool) {
+	let pub getId = () -> str {
 		return id
 	}
 
-	let pub getName = [] -> str {
+	let pub getName = () -> str {
 		return name
 	}
 
-	let pub getIcon = [] -> str {
+	let pub getIcon = () -> str {
 		return icon
 	}
 
-	let pub isBot = [] -> bool {
+	let pub isBot = () -> bool {
 		return bot
 	}
 }

@@ -1,13 +1,13 @@
-class pub Color [red:int green:int blue:int] {
-	let pub getRed = [] -> int {
+class pub Color (red:int, green:int, blue:int) {
+	let pub getRed = () -> int {
 		return red
 	}
 
-	let pub getGreen = [] -> int {
+	let pub getGreen = () -> int {
 		return green
 	}
 
-	let pub getBlue = [] -> int {
+	let pub getBlue = () -> int {
 		return blue
 	}
 }
