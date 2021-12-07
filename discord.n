@@ -283,7 +283,7 @@ let pub getMessage = (c:str, m:str) -> cmd[maybe[message.Message]] {
 let pub sendMessage = (c:str, m:str) -> cmd[int] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages"
 	let r = request.request("POST", url, header, yes(json.object(mapFrom([("content", json.string(m))]))))!
-	print(r)
+	
 	return r.code
 }
 
