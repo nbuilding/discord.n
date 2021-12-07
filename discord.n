@@ -283,7 +283,7 @@ let pub getMessage = (c:str, m:str) -> cmd[maybe[message.Message]] {
 let pub sendMessage = (c:str, m:str) -> cmd[int] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages"
 	let r = request.request("POST", url, header, yes(json.object(mapFrom([("content", json.string(m))]))))!
-	
+	print(r)
 	return r.code
 }
 
@@ -351,7 +351,7 @@ let pub start = (k:str, presence:status.Status, responses:responsesRecord) -> cm
 									if let yes(string(messageType)) = messageData["t"] {
 										if messageType == "READY" {
 											if let yes(object(data)) = messageData["d"] {
-												if let yes(object(userData)) = messageData["user"] {
+												if let yes(object(userData)) = data["user"] {
 													if let yes(runFunc) = responses.onReady {
 														runFunc(parseUserData(userData))!
 													}
