@@ -1,0 +1,24 @@
+class pub Random (mult:int, mod:int, s:int) {
+    let mut seed = s
+	let mut mutator = seed
+
+	let pub getSeed = () -> int {
+		return seed
+	}
+
+	let pub getMutator = () -> int {
+		return mutator
+	}
+
+	let pub setSeed = (s:int) -> () {
+		seed = s
+		mutator = s
+	}
+
+	let pub getNext = () -> float {
+		mutator = (mutator * mult + 1) % mod
+		return mutator.toFloat() / mod.toFloat()
+	}
+}
+
+let pub createRandom = Random(16807, (2^31).floor() - 1)

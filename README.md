@@ -8,3 +8,5 @@ Create a `.token` file and put your bot token in it. Then run `run.n`.
 echo "your bot token" > .token
 TODO run.n
 ```
+
+`.testmods` are just for testing, you can delete them.
