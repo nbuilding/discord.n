@@ -1,5 +1,43 @@
+import json
+
 let color = imp "./color.n"
 
-class pub Embed (title:maybe[str], type:str description:maybe[str], url:maybe[str], color:maybe[color.Color]) {
-	// TODO: the whole class
+// TODO: Add in other types of embeds
+class pub Embed (title:maybe[str], description:maybe[str], url:maybe[str], color:maybe[color.Color]) {
+	let col = imp "./color.n"
+
+	let pub getTitle = () -> maybe[str] {
+		return title
+	}
+	
+	let pub getDescription = () -> maybe[str] {
+		return description
+	}
+	
+	let pub getUrl = () -> maybe[str] {
+		return url
+	}
+	
+	let pub getColor = () -> maybe[col.Color] {
+		return color
+	}
+
+	let pub asJson = () -> json.value {
+		let mut embedData:list[(str, json.value)] = [("type", json.string("rich"))]
+		
+		if let yes(t) = title {
+			embedData = embedData.append(("title", json.string(t)))
+		}
+		if let yes(d) = description {
+			embedData = embedData.append(("description", json.string(d)))
+		}
+		if let yes(u) = url {
+			embedData = embedData.append(("url", json.string(u)))
+		}
+		if let yes(c) = color {
+			embedData = embedData.append(("color", json.number(c.asInt().toFloat())))
+		}
+
+		return json.object(mapFrom(embedData))
+	}
 }

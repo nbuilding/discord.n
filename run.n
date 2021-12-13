@@ -1,9 +1,12 @@
 import FileIO
 import json
+import times
 
-let token = imp token
+let random = imp "./.testmods/random.n"
 
-let discord = imp discord
+let token = imp "./token.n"
+
+let discord = imp "./discord.n"
 
 let responses = {
 	..discord.responsesEmpty,
@@ -18,9 +21,27 @@ let responses = {
 		print(message.getContent())
 
 		if message.getContent() == "ntest" {
-			let response = discord.sendMessage(message.getChannel(), "testing")!
+			let response = discord.sendMessage(message.getChannel(), yes("testing"), none, none, none, none)!
 			if response ~= 200 {
 				print("unable to send message")
+			}
+		}
+		if message.getContent() == "nembed" {
+			let rand = random.createRandom((times.getTime()! * 1000.0).round())
+			let response = discord.sendMessage(message.getChannel(), none, none, yes([
+				discord.embed.Embed(
+					yes("Testing"),
+					yes("This is a test"),
+					yes("https://ash.vin"),
+					yes(discord.color.Color(
+						(rand.getNext() * 256.0).floor(),
+						(rand.getNext() * 256.0).floor(),
+						(rand.getNext() * 256.0).floor(),
+					)),
+				)
+			]), none, none)!
+			if response ~= 200 {
+				print("unable to send embed")
 			}
 		}
 		if message.getContent() == "nexit" && message.getSender().getId() == "384499090865782785" {

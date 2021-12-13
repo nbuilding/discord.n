@@ -10,4 +10,8 @@ class pub Color (red:int, green:int, blue:int) {
 	let pub getBlue = () -> int {
 		return blue
 	}
+
+	let pub asInt = () -> int {
+		return (red << 16) + (green << 8) + blue
+	}
 }

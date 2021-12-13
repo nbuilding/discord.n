@@ -1,0 +1,67 @@
+import FileIO
+
+let shiftRight = (a:int, b:int) -> int {
+  if b < 0 {
+    return 0
+  }
+  return if a < 0 {
+    ((2 ^ 32).round() + a) / (2 ^ b).round()
+  } else {
+    a / (2 ^ b).round()
+  }
+}
+
+let makeCRCTable = () -> list[int] {
+    let mut c = 0;
+    let mut crcTable: list[int] = [];
+    for(n in range(0, 256, 1)){
+        c = n;
+        for(k in range(0, 8, 1)){
+            c = (if (c & 1) == 1 { (0xEDB88320 ^^ (shiftRight(c, 1))) } else { shiftRight(c, 1) } );
+        }
+        crcTable = crcTable.append(c);
+    }
+    return crcTable;
+}
+
+let table = makeCRCTable()
+
+let crc32 = (bytes: list[int]) -> list[int] {
+    let mut x = 0
+    let mut y = 0
+
+    let mut crc = -1
+
+    for (byte in bytes) {
+        crc = shiftRight(crc, 8) ^^ (table[(crc ^^ byte) & 0xff] | 0)
+    }
+
+    crc = shiftRight(crc ^^ -1, 0)
+    return [(crc >> 24) & 0xff, (crc >> 16) & 0xff, (crc >> 8) & 0xff, crc & 0xff]
+}
+
+let generateImage = (r: int, g: int, b: int) -> cmd[result[list[int], ()]] {
+    let possibleValues = FileIO.readBytes("template.png")!
+    if let yes(values) = possibleValues {
+        // Change pallete
+        let mut out = [
+            ..values.subsection(0, 0x4b),
+            ..[r, g, b],
+            ..values.subsection(0x4e, values.len())
+        ]
+
+        // Change checksum
+        out = [
+            ..out.subsection(0, 0x4e),
+            ..crc32(out.subsection(0x47, 0x4e)),
+            ..out.subsection(0x52, out.len()),
+        ]
+
+        return ok(out)
+    }
+    else {
+        print("Input file not found")
+    }
+
+    return err(())
+}

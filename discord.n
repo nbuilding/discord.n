@@ -6,6 +6,7 @@ import times
 let pub color = imp "./color.n"
 let pub role = imp "./role.n"
 let pub member = imp "./member.n"
+let pub embed = imp "./embed.n"
 let pub emote = imp "./emote.n"
 let pub guild = imp "./guild.n"
 let pub channel = imp "./channel.n"
@@ -113,7 +114,7 @@ let pub responsesEmpty = {
 	onDirectMessageReactionRemoveAll: none,
 }
 
-// internal functions
+// Internal functions
 let jsonToStrMap = (jsonVal: json.value) -> maybe[map[str, str]] {
 	if let object(map) = jsonVal {
 		return entries(map).filterMap((((key, value): (str, json.value)) -> maybe[(str, str)] {
@@ -280,9 +281,71 @@ let pub getMessage = (c:str, m:str) -> cmd[maybe[message.Message]] {
 
 
 // Sending messages/reactions
-let pub sendMessage = (c:str, m:str) -> cmd[int] {
-	let url:str = "https://discord.com/api/channels/" + c + "/messages"
-	let r = request.request("POST", url, header, yes(json.object(mapFrom([("content", json.string(m))]))))!
+let pub sendMessage = (
+	channel:str,
+	content:maybe[str],
+	tts:maybe[bool],
+	embeds:maybe[list[embed.Embed]],
+	allowedMentions:maybe[{
+		parse:maybe[list[str]],
+		users:maybe[list[int]],
+		roles:maybe[list[int]],
+		repliedUser:maybe[bool]
+	}],
+	messageReply:maybe[int]
+) -> cmd[int] {
+	let url:str = "https://discord.com/api/channels/" + channel + "/messages"
+
+	let mut jsonContent:list[(str, json.value)] = []
+
+	if let yes(cont) = content {
+		jsonContent = jsonContent.append(("content", json.string(cont)))
+	}
+	if let yes(t) = tts {
+		jsonContent = jsonContent.append(("tts", json.boolean(t)))
+	}
+	if let yes(e) = embeds {
+		jsonContent = jsonContent.append(("embeds", json.array(
+			e.filterMap((v: embed.Embed) -> maybe[json.value] {
+				return yes(v.asJson())
+			})
+		)))
+	}
+	if let yes(am) = allowedMentions {
+		let mut amContent:list[(str, json.value)] = []
+		if let yes(p) = am.parse {
+			amContent = amContent.append(("parse", json.array(
+				p.filterMap((v: str) -> maybe[json.value] {
+					return yes(json.string(v))
+				})
+			)))
+		}
+		if let yes(u) = am.users {
+			amContent = amContent.append(("users", json.array(
+				u.filterMap((v: int) -> maybe[json.value] {
+					return yes(json.number(v.toFloat()))
+				})
+			)))
+		}
+		if let yes(r) = am.roles {
+			amContent = amContent.append(("roles", json.array(
+				r.filterMap((v: int) -> maybe[json.value] {
+					return yes(json.number(v.toFloat()))
+				})
+			)))
+		}
+		if let yes(ru) = am.repliedUser {
+			amContent = amContent.append(("replied_user", json.boolean(ru)))
+		}
+		jsonContent = jsonContent.append(("allowed_mentions", json.object(
+			mapFrom(amContent)
+		)))
+	}
+	if let yes(mr) = messageReply {
+		jsonContent = jsonContent.append(("message_reference", json.number(mr.toFloat())))
+	}
+
+	let r = request.request("POST", url, header, yes(json.object(mapFrom(jsonContent))))!
 	
 	return r.code
 }
