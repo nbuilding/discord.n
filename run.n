@@ -3,6 +3,7 @@ import json
 import times
 
 let random = imp "./.testmods/random.n"
+let imgen = imp "./.testmods/imgen.n"
 
 let token = imp "./token.n"
 
@@ -21,9 +22,29 @@ let responses = {
 		print(message.getContent())
 
 		if message.getContent() == "ntest" {
-			let response = discord.sendMessage(message.getChannel(), yes("testing"), none, none, none, none)!
+			let response = discord.sendMessage(message.getChannel(), yes("testing"), none, none, none, none, none)!
 			if response ~= 200 {
 				print("unable to send message")
+			}
+		}
+		if message.getContent() == "nimg" {
+			let rand = random.createRandom((times.getTime()! * 1000.0).round())
+			if let ok(val) = imgen.generateImage(
+						(rand.getNext() * 256.0).floor(),
+						(rand.getNext() * 256.0).floor(),
+						(rand.getNext() * 256.0).floor(),
+			)! {
+				let response = discord.sendMessage(message.getChannel(),
+					none,
+					none,
+					none,
+					none,
+					none,
+					yes([("test.png", "testing", val)])
+				)!
+				if response ~= 200 {
+					print("unable to send image")
+				}
 			}
 		}
 		if message.getContent() == "nembed" {
@@ -39,7 +60,7 @@ let responses = {
 						(rand.getNext() * 256.0).floor(),
 					)),
 				)
-			]), none, none)!
+			]), none, none, none)!
 			if response ~= 200 {
 				print("unable to send embed")
 			}

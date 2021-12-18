@@ -40,8 +40,8 @@ let crc32 = (bytes: list[int]) -> list[int] {
     return [(crc >> 24) & 0xff, (crc >> 16) & 0xff, (crc >> 8) & 0xff, crc & 0xff]
 }
 
-let generateImage = (r: int, g: int, b: int) -> cmd[result[list[int], ()]] {
-    let possibleValues = FileIO.readBytes("template.png")!
+let pub generateImage = (r: int, g: int, b: int) -> cmd[result[list[int], ()]] {
+    let possibleValues = FileIO.readBytes("./.testmods/template.png")!
     if let yes(values) = possibleValues {
         // Change pallete
         let mut out = [

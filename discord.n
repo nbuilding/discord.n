@@ -3,6 +3,8 @@ import json
 import websocket
 import times
 
+let utils = imp "./utils.n"
+
 let pub color = imp "./color.n"
 let pub role = imp "./role.n"
 let pub member = imp "./member.n"
@@ -114,93 +116,6 @@ let pub responsesEmpty = {
 	onDirectMessageReactionRemoveAll: none,
 }
 
-// Internal functions
-let jsonToStrMap = (jsonVal: json.value) -> maybe[map[str, str]] {
-	if let object(map) = jsonVal {
-		return entries(map).filterMap((((key, value): (str, json.value)) -> maybe[(str, str)] {
-				if let string(str) = value {
-					return yes((key, str))
-				} else {
-					return none
-				}
-			}))
-			|> mapFrom()
-			|> yes()
-	} else {
-		return none
-	}
-}
-
-let parseUserData = (data:map[str, json.value]) -> member.Member {
-	return member.Member(
-		if let yes(string(id)) = data["id"] {
-			id
-		} else {
-			""
-		},
-		if let yes(string(username)) = data["username"] {
-			username
-		} else {
-			""
-		},
-		if let yes(string(avatar)) = data["avatar"] {
-			avatar
-		} else {
-			""
-		},
-		if let yes(string(bot)) = data["bot"] {
-			bot == "True"
-		} else {
-			false
-		}
-	)
-}
-
-let parseMessageData = (data:map[str, json.value]) -> message.Message {
-
-	return message.Message(
-		if let yes(string(ch)) = data["channel_id"] {ch} else {""},
-		if let yes(string(str)) = data["id"] {
-			str
-		} else {
-			""
-		},
-		if let yes(string(str)) = data["content"] {
-			str
-		} else {
-			""
-		},
-		if let yes(object(userData)) = data["author"] {
-			parseUserData(userData)
-		} else {
-			member.Member("", "", "", false)
-		}
-	)
-}
-
-let parseStatus = (input:status.Status) -> json.value {
-	if let yes(since) = input.getSince() {
-		return json.object(mapFrom([
-			("since", json.number(since.toFloat())),
-			("activities", json.array([json.object(mapFrom([
-				("name", json.string(input.getActivity().name)),
-				("type", json.number(input.getActivity().type.toFloat())),
-			]))])),
-			("status", json.string(input.getStatus())),
-			("since", json.boolean(input.isAfk())),
-		]))
-	}
-
-	return json.object(mapFrom([
-		("activities", json.array([json.object(mapFrom([
-			("name", json.string(input.getActivity().name)),
-			("type", json.number(input.getActivity().type.toFloat())),
-		]))])),
-		("status", json.string(input.getStatus())),
-		("since", json.boolean(input.isAfk())),
-	]))
-}
-
 // public functions
 let pub getKey = () -> str {
 	return key
@@ -210,12 +125,12 @@ let pub getKey = () -> str {
 let pub getSelf = () -> cmd[maybe[member.Member]] {
 	// Sends a request to the url
 	let r = request.request("GET", "https://discord.com/api/users/@me", header, none)!
-	if r.code ~= 200{
+	if r.code ~= 200 {
 		return none
 	}
 
 	if let object(map) = r.return {
-		return parseUserData(map)
+		return utils.parseUserData(map)
 							   |> yes()
 	} else {
 		return none
@@ -226,12 +141,12 @@ let pub getUser = (id:str) -> cmd[maybe[member.Member]] {
 	// Uses the id to get the url to send the request to
 	let url:str = "https://discord.com/api/users/" + id
 	let r = request.request("GET", url, header, none)!
-	if r.code ~= 200{
+	if r.code ~= 200 {
 		return none
 	}
 
 	if let object(map) = r.return {
-		return parseUserData(map)
+		return utils.parseUserData(map)
 							   |> yes()
 	} else {
 		return none
@@ -243,7 +158,7 @@ let pub getMessages = (c:str) -> cmd[maybe[list[message.Message]]] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages"
 	let r = request.request("GET", url, header, none)!
 
-	if r.code ~= 200{
+	if r.code ~= 200 {
 		return none
 	}
 
@@ -251,7 +166,7 @@ let pub getMessages = (c:str) -> cmd[maybe[list[message.Message]]] {
 		return list.filterMap(((thing: json.value) -> maybe[message.Message] {
 				 	if let object(data) = thing {
 					 	return data
-					 			  |> parseMessageData()
+					 			  |> utils.parseMessageData()
 					 			  |> yes
 		 			}
 					else {
@@ -268,12 +183,12 @@ let pub getMessage = (c:str, m:str) -> cmd[maybe[message.Message]] {
 	let url:str = "https://discord.com/api/channels/" + c + "/messages/" + m
 	let r = request.request("GET", url, header, none)!
 
-	if r.code ~= 200{
+	if r.code ~= 200 {
 		return none
 	}
 
 	if let object(data) = r.return {
-		return yes(parseMessageData(data))
+		return yes(utils.parseMessageData(data))
 	}
 
 	return none
@@ -292,7 +207,9 @@ let pub sendMessage = (
 		roles:maybe[list[int]],
 		repliedUser:maybe[bool]
 	}],
-	messageReply:maybe[int]
+	messageReply:maybe[int],
+	// File name, Files data in string form
+	files: maybe[list[(str, str, list[int])]]
 ) -> cmd[int] {
 	let url:str = "https://discord.com/api/channels/" + channel + "/messages"
 
@@ -344,8 +261,74 @@ let pub sendMessage = (
 	if let yes(mr) = messageReply {
 		jsonContent = jsonContent.append(("message_reference", json.number(mr.toFloat())))
 	}
+	
+	if let yes(fs) = files {
+		// Upload files
+		let mut filesContent: list[{id: int, description: str, filename: str, bytes: list[int]}] = []
 
+		for (i in range(0, fs.len(), 1)) {
+			if let yes(fd) = fs[i] {
+				let (name, des, f) = fd
+				filesContent = filesContent.append({
+					id: i,
+					description: des,
+					filename: name,
+					bytes: f,
+				})
+			}
+		}
+
+		jsonContent = jsonContent.append(("attachments", json.array(filesContent.filterMap((v: {id: int, description: str, filename: str, bytes: list[int]}) -> maybe[json.value] {
+			return yes(json.object(mapFrom([
+				("id", json.number(v.id.toFloat())),
+				("description", json.string(v.description)),
+				("filename", json.string(v.filename)),
+			])))
+		}))))
+
+		let r = request.sendMultipartForm("POST", url, yes(json.object(mapFrom([
+			("Authorization", json.string("Bot " + key))
+		]))), [{
+			name: "playload_json",
+			data: (false, utils.toBytes("{\"attachments\": [{ \"id\": 0, \"description\": \"This took me way too long\", \"filename\": \"help.png\" }]}")),
+			filename: none,
+			contentType: none,
+		},
+		..filesContent.filterMap((v: {id: int, description: str, filename: str, bytes: list[int]}) -> maybe[{name: str, data: (bool, list[int]), filename: maybe[str], contentType: maybe[str]}] {
+			return yes({
+				name: "files[" + v.id.toString() + "]",
+				data: (true, v.bytes),
+				filename: yes(v.filename),
+				contentType: none
+			})
+		})])!
+
+		return r.code
+	}
 	let r = request.request("POST", url, header, yes(json.object(mapFrom(jsonContent))))!
+	
+	return r.code
+}
+
+let pub sendMessageTest = (img: list[int]) -> cmd[int] {
+	let url:str = "https://discord.com/api/channels/660903404977127426/messages"
+
+	let r = request.sendMultipartForm("POST", url, yes(json.object(mapFrom([
+		("Authorization", json.string("Bot " + key))
+	]))), [{
+		name: "playload_json",
+		data: (false, utils.toBytes("{\"attachments\": [{ \"id\": 0, \"description\": \"This took me way too long\", \"filename\": \"help.png\" }]}")),
+		filename: none,
+		contentType: none,
+	},
+	{
+		name: "files[0]",
+		data: (true, img),
+		filename: yes("help.png"),
+		contentType: none
+	}])!
+
+	// print(r)
 	
 	return r.code
 }
@@ -375,7 +358,7 @@ let pub start = (k:str, presence:status.Status, responses:responsesRecord) -> cm
 											("$browser", json.string("none")),
 											("$device", json.string("none"))
 										]))),
-										("presence", parseStatus(presence))
+										("presence", utils.parseStatus(presence))
 									])))
 								]))
 			let mut heartbeatInterval = 1000.0
@@ -416,7 +399,7 @@ let pub start = (k:str, presence:status.Status, responses:responsesRecord) -> cm
 											if let yes(object(data)) = messageData["d"] {
 												if let yes(object(userData)) = data["user"] {
 													if let yes(runFunc) = responses.onReady {
-														runFunc(parseUserData(userData))!
+														runFunc(utils.parseUserData(userData))!
 													}
 												}
 											}
@@ -424,7 +407,7 @@ let pub start = (k:str, presence:status.Status, responses:responsesRecord) -> cm
 										if messageType == "MESSAGE_CREATE" {
 											if let yes(object(data)) = messageData["d"] {
 												if let yes(runFunc) = responses.onMessage {
-														stop = runFunc(parseMessageData(data))!
+														stop = runFunc(utils.parseMessageData(data))!
 													}
 											}
 										}

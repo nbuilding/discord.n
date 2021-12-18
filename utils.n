@@ -1,0 +1,101 @@
+import json
+
+let member = imp "./member.n"
+let message = imp "./message.n"
+let status = imp "./status.n"
+
+// Internal functions
+let pub jsonToStrMap = (jsonVal: json.value) -> maybe[map[str, str]] {
+	if let object(map) = jsonVal {
+		return entries(map).filterMap((((key, value): (str, json.value)) -> maybe[(str, str)] {
+				if let string(str) = value {
+					return yes((key, str))
+				} else {
+					return none
+				}
+			}))
+			|> mapFrom()
+			|> yes()
+	} else {
+		return none
+	}
+}
+
+let pub parseUserData = (data:map[str, json.value]) -> member.Member {
+	return member.Member(
+		if let yes(string(id)) = data["id"] {
+			id
+		} else {
+			""
+		},
+		if let yes(string(username)) = data["username"] {
+			username
+		} else {
+			""
+		},
+		if let yes(string(avatar)) = data["avatar"] {
+			avatar
+		} else {
+			""
+		},
+		if let yes(string(bot)) = data["bot"] {
+			bot == "True"
+		} else {
+			false
+		}
+	)
+}
+
+let pub parseMessageData = (data:map[str, json.value]) -> message.Message {
+
+	return message.Message(
+		if let yes(string(ch)) = data["channel_id"] {ch} else {""},
+		if let yes(string(str)) = data["id"] {
+			str
+		} else {
+			""
+		},
+		if let yes(string(str)) = data["content"] {
+			str
+		} else {
+			""
+		},
+		if let yes(object(userData)) = data["author"] {
+			parseUserData(userData)
+		} else {
+			member.Member("", "", "", false)
+		}
+	)
+}
+
+let pub parseStatus = (input:status.Status) -> json.value {
+	if let yes(since) = input.getSince() {
+		return json.object(mapFrom([
+			("since", json.number(since.toFloat())),
+			("activities", json.array([json.object(mapFrom([
+				("name", json.string(input.getActivity().name)),
+				("type", json.number(input.getActivity().type.toFloat())),
+			]))])),
+			("status", json.string(input.getStatus())),
+			("since", json.boolean(input.isAfk())),
+		]))
+	}
+
+	return json.object(mapFrom([
+		("activities", json.array([json.object(mapFrom([
+			("name", json.string(input.getActivity().name)),
+			("type", json.number(input.getActivity().type.toFloat())),
+		]))])),
+		("status", json.string(input.getStatus())),
+		("since", json.boolean(input.isAfk())),
+	]))
+}
+
+let pub toBytes = (inp:str) -> list[int] {
+    let mut out: list[int] = []
+    for (i in range(0, inp.len(), 1)) {
+        out = out.append((inp[i] | \{ }).charCode())
+    }
+
+    return out
+} 
