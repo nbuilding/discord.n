@@ -327,7 +327,9 @@ let pub start = [k:str presence:status.Status responses:responsesRecord] -> cmd[
 						("d", if let <yes lsn> = lastSequenceNumber { json.number(lsn) } else { json.null })
 					]))))!
 					while (true) {
+						print(floor(heartbeatInterval))
 						let _ = times.sleep(floor(heartbeatInterval))!
+						print("Slept.")
 						let _ = send(json.stringify(json.object(mapFrom([
 							("op", json.number(1.0)),
 							("d", if let <yes lsn> = lastSequenceNumber { json.number(lsn) } else { json.null })
@@ -390,6 +392,6 @@ let pub start = [k:str presence:status.Status responses:responsesRecord] -> cmd[
 			return false
 		}
 	}
-	
+
 	return false
 }

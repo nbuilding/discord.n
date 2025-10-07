@@ -1,8 +1,6 @@
 import FileIO
 import json
 
-let token = imp token
-
 let discord = imp discord
 
 let responses = {
@@ -23,10 +21,10 @@ let responses = {
 				print("unable to send message")
 			}
 		}
-		if message.getContent() == "nexit" && message.getSender().getId() == "384499090865782785" {
+		if message.getContent() == "nexit" && message.getSender().getId() == "212355530474127361" {
 			print("exiting...")
 			return true
-		} 
+		}
 
 		return false
 	})
@@ -45,13 +43,10 @@ let presence = discord.status.Status(
 let self = [] -> cmd[()]{
 	let key = FileIO.read(".token")!
 		|> default("")
-
-	if key == "" {
-		var key = token.KEY
-	}
+		|> strip
 
 	let _ = discord.start(key, presence, responses)!
-		
+	print("Exit!")
 }
 
 let pub main = self()
